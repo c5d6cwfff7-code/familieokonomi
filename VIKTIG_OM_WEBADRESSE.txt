@@ -1,0 +1,9 @@
+VIKTIG OM WEBADRESSE
+
+For ekte Microsoft-pålogging må Familieøkonomi 3.0 kjøres fra en http/https-adresse som er registrert som Single-page application (SPA) i Microsoft Entra.
+
+Å åpne HTML-filen direkte med file:// er ikke nok for ekte OneDrive-innlogging.
+
+OneDrive brukes som datalager for JSON-filen. Selve HTML-programmet må derfor ligge på en webadresse som kan brukes som redirect URI.
+
+En enkel løsning er å publisere Familieokonomi_3_0.html som en liten statisk nettside, for eksempel på GitHub Pages eller Azure Static Web Apps.

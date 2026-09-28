@@ -1,0 +1,16 @@
+OFFISIELLE MICROSOFT-SIDER FOR OPPSETT
+
+App registration:
+https://learn.microsoft.com/en-us/graph/auth-register-app-v2
+
+SPA / redirect URI:
+https://learn.microsoft.com/en-us/entra/identity-platform/scenario-spa-app-configuration
+
+OneDrive / Graph:
+https://learn.microsoft.com/en-us/graph/api/resources/onedrive?view=graph-rest-1.0
+
+Shared file:
+https://learn.microsoft.com/en-us/graph/api/shares-get?view=graph-rest-1.0
+
+Upload / replace file:
+https://learn.microsoft.com/en-us/graph/api/driveitem-put-content?view=graph-rest-1.0

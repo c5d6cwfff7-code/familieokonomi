@@ -1,0 +1,35 @@
+FAMILIEØKONOMI 3.0 – EKTE ONEDRIVE-SYNKRONISERING
+
+VIKTIG:
+3.0 er laget for ekte Microsoft Graph-synkronisering. Programmet skal ikke åpnes som en vanlig file://-fil hvis OneDrive-innlogging skal brukes.
+
+HVORDAN DET FUNGERER
+- Microsoft-konto brukes til innlogging.
+- Familieokonomi_fellesdata.json ligger i OneDrive.
+- Programmet leser filen direkte fra OneDrive.
+- Programmet skriver filen direkte tilbake til OneDrive.
+- Før lagring kontrolleres filens eTag. Hvis den andre brukeren har endret filen, stoppes lagringen i stedet for å overskrive den andre brukerens endringer.
+
+FOR DEG OG TORILL
+1. Legg Familieokonomi_fellesdata.json i en OneDrive-mappe.
+2. Del selve JSON-filen med Torill med redigeringstillatelse.
+3. Opprett en Microsoft Entra App Registration.
+4. Velg kontoer som kan bruke personlige Microsoft-kontoer hvis dere bruker vanlige Microsoft/OneDrive-kontoer.
+5. Legg inn programmets HTTPS-adresse som Single-page application (SPA) redirect URI.
+6. Gi appen delegated permission: Files.ReadWrite.
+7. Kopier Application (client) ID inn i Familieøkonomi 3.0.
+8. Kopier delingslenken til selve Familieokonomi_fellesdata.json inn i OneDrive-oppsettet.
+9. Logg inn med Microsoft.
+10. Trykk «Hent siste data fra OneDrive».
+11. Etter registrering: trykk «Lagre til OneDrive».
+
+MIGRERING FRA 2.9
+- Bruk «📂 Importer data fra 2.9» i 3.0.
+- Velg JSON-filen som ble laget av 2.9.
+- Kontroller at oktoberpostene er med.
+- Lagre deretter direkte til OneDrive.
+
+SIKKERHET
+- Ikke legg inn en client secret i HTML-filen.
+- 3.0 bruker Authorization Code Flow med PKCE for en SPA.
+- Tilgang gis av Microsoft og begrenses av Graph-permisjonene som er gitt til appen.

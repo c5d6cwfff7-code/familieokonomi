@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Familieøkonomi 3.0</title>
+<style>
+:root{--bg:#f3f5f7;--card:#fff;--ink:#17212b;--muted:#667085;--line:#d9dee5;--accent:#1f6feb;--good:#1f7a45;--danger:#b42318}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+header{background:var(--ink);color:#fff;padding:22px 28px} header h1{margin:0 0 5px;font-size:30px} header p{margin:0;color:#d6dbe1}
+nav{display:flex;gap:8px;flex-wrap:wrap;background:#fff;padding:12px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+button{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer;background:#e9eef4;color:var(--ink)}
+button.primary{background:var(--accent);color:#fff} button.danger{background:#fde8e7;color:var(--danger)}
+main{max-width:1200px;margin:24px auto;padding:0 18px}.page{display:none}.page.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 2px 8px #00000008}
+.card h3{margin:0 0 8px}.big{font-size:27px;font-weight:800}.muted{color:var(--muted)}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left}th{background:#eef2f6}
+.right{text-align:right}.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.field label{display:block;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:11px;border:1px solid #cbd3dc;border-radius:9px;font-size:15px}.field textarea{min-height:80px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.notice{padding:13px 15px;border-radius:10px;background:#eef6ff;border:1px solid #cfe2ff;margin:15px 0}.success{background:#edf8f1;border-color:#ccebd7}.warning{background:#fff7e8;border-color:#f2d59b}
+h2{margin-top:0}.amount{font-variant-numeric:tabular-nums}.small{font-size:13px}.budgetlist{margin:6px 0 18px;padding-left:22px}.budgetlist li{margin:5px 0}.card h4{margin:18px 0 6px}.fundname{font-size:16px;font-weight:700;line-height:1.25}
+@media(max-width:650px){header{padding:18px}header h1{font-size:24px}nav button{flex:1 1 45%}}
+
+.overview-card{padding:14px 16px;box-shadow:none}
+.overview-card h3{font-size:15px;line-height:1.15;margin:0 0 6px}
+.overview-card .big{font-size:23px;line-height:1.05}
+.overview-card .small{font-size:11px}
+
+.income-card h3{margin-bottom:6px}
+.income-card table{margin-top:10px}
+.income-card th,.income-card td{padding:9px 10px}
+
+.fund-chart{width:100%;min-height:230px}
+.fund-chart svg{display:block;width:100%;height:230px}
+.fund-chart .chart-grid{stroke:#e3e7ec;stroke-width:1}
+.fund-chart .chart-line{fill:none;stroke:#1f6feb;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.fund-chart .chart-point{fill:#fff;stroke:#1f6feb;stroke-width:2}
+.fund-chart .chart-label{font-size:11px;fill:#667085}
+.fund-chart .chart-value{font-size:11px;fill:#17212b;font-weight:700}
+.fund-chart-empty{padding:45px 10px;text-align:center;color:var(--muted);background:#f8fafc;border-radius:10px}
+
+.performance-chart{width:100%;min-height:300px;background:#fff;border-radius:12px;overflow:hidden}
+.performance-chart svg{display:block;width:100%;height:300px}
+.performance-chart .pg{stroke:#e5e7eb;stroke-width:1}
+.performance-chart .pl{fill:none;stroke:#1f6feb;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.performance-chart .pp{fill:#fff;stroke:#1f6feb;stroke-width:2}
+.performance-chart .tx{font-size:11px;fill:#667085}
+.performance-chart .tv{font-size:11px;fill:#17212b;font-weight:700}
+.performance-chart .empty{padding:80px 10px;text-align:center;color:#667085}
+</style>
+</head>
+<body>
+<header>
+  <h1>Familieøkonomi</h1>
+  <p>Odd · Torill · Husholdningen · Fjelli gård · Startsaldo 27.09.2026 · Versjon 3.0</p>
+</header>
+<nav>
+  <button onclick="show('oversikt')">🏠 Oversikt</button>
+  <button onclick="show('saldo')">🏦 Startsaldo</button>
+  <button onclick="show('registrer')">➕ Registrer</button>
+  <button onclick="show('inntekter')">💰 Inntekter</button>
+  <button onclick="show('fond')">📈 Fond</button>
+  <button onclick="show('poster')">📋 Poster</button>
+  <button onclick="show('rapporter')">📊 Rapporter</button>
+<button type="button" onclick="show('rente')">🏦 Rentekalkulator</button>
+  <button onclick="show('onedrive')">☁️ OneDrive</button>
+</nav>
+
+<main>
+<section id="oversikt" class="page active">
+<h2>Oversikt</h2>
+<div class="notice"><b>Ny start.</b> Denne versjonen bygger videre på den låste versjon 1.0. Januar–september er ikke med. Startsaldo er satt til <b>27.09.2026</b>. Første ordinære registreringsperiode er <b>oktober 2026</b>.</div>
+<div id="cards" class="grid"></div>
+<div class="card" style="margin-top:16px">
+<h3>Siste registrerte poster</h3>
+<div id="overviewPosts"></div>
+</div>
+<div class="card" style="margin-top:16px">
+<h3>Fordeling etter område</h3>
+<div id="overviewAreas"></div>
+</div>
+<div class="card" style="margin-top:16px">
+<h3>Kontoinformasjon</h3>
+<table>
+<tr><th>Konto</th><th>Kontonummer</th></tr>
+<tr><td>Fjelli gård</td><td>6034 19 20240</td></tr>
+<tr><td>Felles budsjettkonto</td><td>6428 12 15122</td></tr>
+<tr><td>Felles gavekonto</td><td>6580 23 24507</td></tr>
+</table>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h3>Avtaler med sluttdato</h3>
+<table>
+<tr><th>Avtale</th><th>Gjelder til</th></tr>
+<tr><td>Polar Kraft – faststrøm-avtale</td><td>01.01.2027</td></tr>
+<tr><td>Fastrente-lån</td><td>23.03.2027</td></tr>
+</table>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h3>📈 Fondsgrafer</h3>
+<p class="muted">Fondets utvikling over tid. Grafene viser fondets egen utvikling, ikke antall fondsandeler.</p>
+<div class="fund-chart-block">
+<h4>Fond – Odd: AuAg Silver Bullett EUR</h4>
+<div id="overviewAuagPerformanceChart" class="performance-chart"></div>
+</div>
+<div class="fund-chart-block" style="margin-top:24px">
+<h4>Fond – Odd: Nordea Emerging Market Equities A</h4>
+<div id="overviewNordeaPerformanceChart" class="performance-chart"></div>
+</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h3>Hva vi bygger videre på</h3>
+<p>Vi holder <b>Odd</b>, <b>Torill</b>, <b>Husholdningen</b> og <b>Fjelli gård</b> adskilt. Budsjettposter registreres først når de faktisk skjer.</p>
+</div>
+</section>
+
+<section id="saldo" class="page">
+<h2>Startsaldo</h2>
+<div class="notice success">Registrer saldoen slik den er når vi starter. Dette er <b>ikke en inntekt</b> og <b>ikke en utgift</b> – det er startpunktet for kontoen/fondet.</div>
+<div class="form">
+<div class="field"><label>Konto / fond</label><select id="balAccount"></select></div>
+<div class="field"><label>Saldo</label><input id="balAmount" type="number" step="0.01" placeholder="0,00"></div>
+<div class="field"><label>Dato</label><input id="balDate" type="date" value="2026-10-01"></div>
+</div>
+<div class="actions"><button class="primary" onclick="saveBalance()">Lagre startsaldo</button></div>
+<div class="card" style="margin-top:18px"><h3>Registrerte startsaldoer</h3><div id="balancesTable"></div></div>
+</section>
+
+<section id="registrer" class="page">
+<h2>Registrer ny post</h2>
+<div class="form">
+<div class="field"><label>Dato</label><input id="date" type="date" value="2026-10-01"></div>
+<div class="field"><label>Beskrivelse</label><input id="desc" placeholder="F.eks. strøm, gave, drivstoff"></div>
+<div class="field"><label>Beløp</label><input id="amount" type="number" step="0.01" placeholder="0,00"></div>
+<div class="field"><label>Hvem</label><select id="who"></select></div>
+<div class="field"><label>Område</label><select id="area"></select></div>
+<div class="field"><label>Postgruppe</label>
+<select id="budgetGroup" onchange="filterBudgetCategories()">
+<option value="alle">Velg postgruppe</option>
+<option value="shared50">Faste utgifter – deles 50/50</option>
+<option value="joint">Disponering fra felles budsjettkonto</option>
+<option value="fjelli">Faste utgifter – Fjelli gård</option>
+<option value="tax">Skatteoppgjør</option>
+<option value="otherincome">Andre inntekter</option>
+<option value="other">Andre poster</option>
+</select></div>
+<div class="field"><label>Kategori</label><select id="category" onchange="setTaxType()"></select></div>
+<div class="field"><label>Konto</label><select id="account"></select></div>
+<div class="field" id="toAccountWrap" style="display:none"><label>Til konto</label><select id="toAccount"></select></div>
+<div class="field"><label>Type</label><select id="type" onchange="toggleTransfer()"><option value="utgift">Utgift</option><option value="inntekt">Innbetaling</option><option value="overforing">Overføring</option></select></div>
+<div class="field" style="grid-column:1/-1"><label>Notat</label><textarea id="note"></textarea></div>
+</div>
+<div class="notice">
+<b>Innbetaling:</b> Velg «Innbetaling» når penger kommer inn på kontoen uten at de skal trekkes fra en annen konto i programmet.
+Eksempel: gave, tilbakebetaling eller annen innbetaling.
+</div>
+<div class="notice success">
+<b>Skatteoppgjør:</b> Velg <b>Postgruppe → Skatteoppgjør</b>. Der finner du <b>Tilbakebetaling skatt</b> og <b>Baksmell skatt</b>.
+Tilbakebetaling registreres automatisk som innbetaling, mens baksmell registreres som utgift.
+</div><div class="actions"><button class="primary" onclick="savePost()">Lagre post</button><button onclick="clearForm()">Tøm</button></div>
+<div id="editNotice"></div>
+</section>
+
+
+<section id="inntekter" class="page">
+<h2>Inntekter</h2>
+<div class="card" style="margin-top:16px">
+<h3>Inntektsoversikt</h3>
+<p>Her registrerer vi bare <b>netto inntekt</b> – det som faktisk kommer inn på konto.</p>
+<p><b>Tilbakebetaling skatt</b> registreres som innbetaling, mens <b>baksmell skatt</b> registreres som utgift under + Registrer.</p>
+</div>
+<div class="grid">
+  <div class="card income-card">
+    <h3>Odd</h3>
+    <p class="muted small">Arbeidsinntekt – Fauske kommune</p>
+    <table><tr><th>Netto per måned</th><th class="right amount">33 664,57 kr</th></tr></table>
+  </div>
+  <div class="card income-card">
+    <h3>Torill</h3>
+    <p class="muted small">Faste nettoinntekter</p>
+    <div class="field"><label>Uføretrygd – netto per måned</label><input id="torillUfore" type="number" step="0.01" placeholder="0,00"></div>
+    <div class="field"><label>KLP – netto per måned</label><input id="torillKlp" type="number" step="0.01" placeholder="0,00"></div>
+    <button class="primary" onclick="saveTorillIncome()">Lagre Torills inntekt</button>
+    <p class="small muted" id="torillIncomeStatus"></p>
+  </div>
+  <div class="card income-card">
+    <h3>Husholdningen</h3>
+    <p class="muted">Ingen faste inntekter registrert.</p>
+  </div>
+</div>
+</section>
+
+
+<section id="fond" class="page">
+<h2>Fond</h2>
+<div class="card fund-add-card">
+  <h3>➕ Nytt fond</h3>
+  <div class="field"><label>Eier</label>
+    <select id="newFundOwner">
+      <option value="Odd">Odd</option>
+      <option value="Torill">Torill</option>
+    </select>
+  </div>
+  <div class="field"><label>Fondnavn</label><input id="newFundName" placeholder="Skriv inn fondets navn"></div>
+  <div class="field"><label>Antall andeler</label><input id="newFundUnits" type="number" step="0.0001" min="0" placeholder="0,00"></div>
+  <button type="button" onclick="addNewFund()">Legg til fond</button>
+  <p class="muted">Du kan legge inn så mange fond du ønsker, både for Odd og Torill. Nye fond får automatisk sin egen grafplass og historikk.</p>
+</div>
+
+<div class="notice">Her følger vi <b>antall fondsandeler</b>. Når du kjøper eller selger fond, registrerer du bare endringen. Historikken beholdes.</div>
+<div class="card" style="margin-top:18px">
+  <h3>📈 Fondets utvikling over tid</h3>
+  <p class="muted">Her ser du fondets egen utvikling basert på historisk avkastning – ikke antall fondsandeler. Grafen er normalisert til 100 ved periodens start.</p>
+  <div class="actions" style="margin-bottom:12px">
+    <button type="button" class="primary" onclick="setFundChartPeriod(3)">3 år</button>
+    <button type="button" onclick="setFundChartPeriod(5)">5 år</button>
+    <button type="button" onclick="setFundChartPeriod(7)">7 år</button>
+    <button type="button" onclick="setFundChartPeriod(0)">Maks</button>
+  </div>
+  <div class="fund-chart-block">
+    <h4>Fond – Odd: AuAg Silver Bullett EUR</h4>
+    <div id="auagPerformanceChart" class="performance-chart"></div>
+    <p class="small muted">Kilde: AuAg Funds. Historisk utvikling basert på NAV. AuAg oppgir 3 års totalavkastning på +339,86 % for den valgte andelsklassen i de tilgjengelige dataene.</p>
+  </div>
+  <div class="fund-chart-block" style="margin-top:24px">
+    <h4>Fond – Odd: Nordea Emerging Market Equities A</h4>
+    <div id="nordeaPerformanceChart" class="performance-chart"></div>
+    <p class="small muted">Kilde: Nordea Funds og historiske fondsdata. Grafen viser tilgjengelige kvartalspunkter for perioden, normalisert til 100 ved start.</p>
+  </div>
+</div>
+
+
+<div class="grid">
+  <div class="card income-card">
+    <h3>Fond – Odd:</h3>
+    <div class="fundname">AuAg Silver Bullett EUR</div>
+    <table>
+      <tr><th>Antall andeler</th><th class="right amount" id="auagUnits">4,19</th></tr>
+      <tr><th>Siste NAV</th><th class="right amount" id="auagNav">43,37 EUR</th></tr>
+      <tr><th>Verdi etter NAV</th><th class="right amount" id="auagValue">181,72 EUR</th></tr>
+      <tr><td colspan="2" class="small muted">NAV-kilde: AuAg Funds · 24.09.2026</td></tr>
+    </table>
+    <div class="actions">
+      <button class="primary" onclick="openAuAg()">Åpne AuAg kurs</button>
+      <button onclick="editFund('auag')">✏️ Endre andeler</button>
+    </div>
+  </div>
+
+  <div class="card income-card">
+    <h3>Fond – Odd:</h3>
+    <div class="fundname">Nordea Emerging Market Equities A</div>
+    <table>
+      <tr><th>Antall andeler</th><th class="right amount" id="nordeaUnits">3,28</th></tr>
+      <tr><th>Siste NAV</th><th class="right amount" id="nordeaNav">Ikke registrert</th></tr>
+      <tr><th>Verdi etter NAV</th><th class="right amount" id="nordeaValue">Ikke beregnet</th></tr>
+    </table>
+    <div class="actions">
+      <button onclick="editFund('nordea')">✏️ Endre andeler</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="card" style="margin-top:16px">
+<h3>Endre fondsbeholdning</h3>
+<div class="form">
+<div class="field"><label>Fond</label><select id="fundSelect" onchange="loadFundEditor()">
+<option value="auag">AuAg Silver Bullett EUR</option>
+<option value="nordea">Nordea Emerging Market Equities A</option>
+</select></div>
+<div class="field"><label>Dato</label><input id="fundDate" type="date" value="2026-09-27"></div>
+<div class="field"><label>Endring i andeler</label><input id="fundChange" type="number" step="0.01" placeholder="F.eks. 1,50 eller -1,50"></div>
+<div class="field"><label>Årsak</label><select id="fundReason"><option>Kjøp</option><option>Salg</option><option>Reinvestering</option><option>Korrigering</option></select></div>
+</div>
+<div class="actions"><button class="primary" onclick="saveFundChange()">Lagre endring</button></div>
+<div id="fundStatus"></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h3>Historikk</h3>
+<div id="fundHistory"></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h3>Om kursene</h3>
+<p class="small muted">AuAg Silver Bullet B (EUR) handles daglig, og AuAg opplyser at NAV normalt oppdateres rundt kl. 11.00. Programmet bruker siste registrerte NAV og viser datoen den gjelder for.</p>
+</div>
+<div class="card" id="customFundsCard" style="margin-top:18px"><h3>Mine registrerte fond</h3><div id="customFundsList"><p class="muted">Ingen nye fond registrert ennå.</p></div></div>
+</section>
+
+<section id="poster" class="page">
+<h2>Registrerte poster</h2>
+<div class="card"><div id="postsTable"></div></div>
+</section>
+
+<section id="rapporter" class="page">
+<h2>Rapporter</h2>
+<div id="reportCards" class="grid"></div>
+<div class="card" style="margin-top:16px"><h3>Utgifter per område</h3><div id="areaReport"></div></div>
+</section>
+
+
+
+
+<section id="onedrive" class="page">
+  <h2>☁️ OneDrive</h2>
+
+  <div class="notice warning">
+    <b>Familieøkonomi 3.0 bruker ekte Microsoft Graph-synkronisering.</b>
+    Programmet skriver og leser den samme felles JSON-filen direkte i OneDrive etter at du har logget inn med Microsoft.
+  </div>
+
+  <div class="card">
+    <h3>1. Oppsett</h3>
+    <div class="form">
+      <div class="field">
+        <label for="odClientId">Microsoft App (Client ID)</label>
+        <input id="odClientId" placeholder="f.eks. 12345678-....">
+      </div>
+      <div class="field">
+        <label for="odRedirectUri">Redirect URI</label>
+        <input id="odRedirectUri" readonly>
+      </div>
+      <div class="field">
+        <label for="odShareUrl">OneDrive-lenke til Familieokonomi_fellesdata.json</label>
+        <input id="odShareUrl" placeholder="Lim inn delingslenken til JSON-filen">
+      </div>
+    </div>
+    <div class="actions">
+      <button onclick="saveOneDriveSettings()">💾 Lagre oppsett</button>
+      <button onclick="clearOneDriveSettings()">🗑️ Nullstill oppsett</button>
+    </div>
+    <p class="small muted">
+      Klient-ID og redirect URI må komme fra en Microsoft Entra-app som er registrert som <b>Single-page application (SPA)</b>.
+      Det skal ikke legges inn noen client secret i programmet.
+    </p>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>2. Microsoft-tilkobling</h3>
+    <div id="odAccountStatus" class="notice">Ikke logget inn.</div>
+    <div class="actions">
+      <button class="primary" onclick="oneDriveLogin()">🔐 Logg inn med Microsoft</button>
+      <button onclick="oneDriveLogout()">🚪 Logg ut</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>3. Felles økonomidata</h3>
+    <div class="actions">
+      <button class="primary" onclick="syncFromOneDrive()">🔄 Hent siste data fra OneDrive</button>
+      <button class="primary" onclick="syncToOneDrive()">☁️ Lagre til OneDrive</button>
+      <button onclick="importFamilyEconomyFile()">📂 Importer data fra 2.9</button>
+      <button onclick="exportLocalBackup()">🗂️ Lag backup</button>
+    </div>
+    <div id="onedriveStatus" class="card" style="background:#f8fafc;margin-top:14px">Status: Klar</div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Hvordan dette skal brukes</h3>
+    <ol>
+      <li>Du og Torill får tilgang til den samme JSON-filen i OneDrive.</li>
+      <li>Før registrering: hent siste data fra OneDrive.</li>
+      <li>Registrer endringene.</li>
+      <li>Trykk <b>☁️ Lagre til OneDrive</b>.</li>
+      <li>Den andre brukeren trykker <b>🔄 Hent siste data fra OneDrive</b>.</li>
+    </ol>
+    <p class="small muted">
+      Programmet kontrollerer filens siste versjon før lagring. Hvis filen har blitt endret av den andre brukeren siden du hentet den,
+      stoppes lagringen i stedet for at den andre brukerens endringer overskrives.
+    </p>
+  </div>
+</section>
+
+
+</main>
+
+<script>
+// Robust storage: works both in normal browsers and sandboxed previews where localStorage is blocked.
+const storage = (() => {
+  try {
+    const ls = window.localStorage;
+    const testKey = "__familieokonomi_storage_test__";
+    ls.setItem(testKey, "1");
+    ls.removeItem(testKey);
+    return ls;
+  } catch (e) {
+    const memory = Object.create(null);
+    return {
+      getItem: (key) => Object.prototype.hasOwnProperty.call(memory, key) ? memory[key] : null,
+      setItem: (key, value) => { memory[key] = String(value); },
+      removeItem: (key) => { delete memory[key]; }
+    };
+  }
+})();
+const ACCOUNTS=[
+ "Felles budsjettkonto","Felles gavekonto","Fjelli gård – konto",
+ "Bufferkonto – Odd","Bufferkonto – Torill","Fond – Odd – AuAg Silver Bullet EUR","Fond – Odd – Nordea Emerging Market Equities A","Fond – Torill"
+];
+const WHO=["Odd","Torill","Husholdningen","Fjelli gård"];
+const AREAS=["Odd","Torill","Husholdningen","Fjelli gård"];
+const CATS=[
+ "Nordea Huslån",
+ "Gjensidige forsikring",
+ "Polar Kraft strøm",
+ "Signal Altibox",
+ "Statens lånekasse",
+ "Kommunale avgifter m.m.",
+ "IRIS Salten",
+ "Beiarn Turistsenter",
+ "Fyringsved privat",
+ "Fyringsgass campingvogn",
+ "Årsabonnement Office 365",
+ "Verksted ATV/traktorklipper",
+ "Drivstoff ATV/traktorklipper",
+ "Ferie",
+ "Nord Salten Kraft strøm",
+ "Gave",
+ "Gevinst",
+ "Arv",
+ "Annen innbetaling",
+ "Annen utgift",
+ "Tilbakebetaling skatt",
+ "Baksmell skatt"
+];
+const DATA_KEY="familieokonomi_2_9";
+const DEFAULT_DATA={balances:[
+ {id:1,account:"Felles budsjettkonto",amount:12154.21,date:"2026-09-27"},
+ {id:2,account:"Felles gavekonto",amount:1230,date:"2026-09-27"},
+ {id:3,account:"Fjelli gård – konto",amount:3000,date:"2026-09-27"},
+ {id:4,account:"Fond – Odd – AuAg Silver Bullet EUR",amount:1960.06,date:"2026-09-27"},
+ {id:5,account:"Fond – Odd – Nordea Emerging Market Equities A",amount:2049.77,date:"2026-09-27"},
+ {id:6,account:"Bufferkonto – Odd",amount:8000,date:"2026-09-27"},
+ {id:7,account:"Bufferkonto – Torill",amount:0,date:"2026-09-27"}],posts:[]};
+function loadData(){
+ try{
+  const raw=storage.getItem(DATA_KEY)||storage.getItem("familieokonomi_2_8")||storage.getItem("familieokonomi_2_7")||storage.getItem("familieokonomi_2_2")||storage.getItem("familieokonomi_2_1")||storage.getItem("familieokonomi_2_0");
+  const parsed=raw?JSON.parse(raw):structuredClone(DEFAULT_DATA);
+  if(!Array.isArray(parsed.balances)||!Array.isArray(parsed.posts)) throw new Error("Ugyldig data");
+  return parsed;
+ }catch(e){return structuredClone(DEFAULT_DATA)}
+}
+let data=loadData();
+let editId=null;
+const incomeData={
+  Odd:{type:"Arbeidsinntekt – Fauske kommune",gross:47508.33,tax:12027.00,other:1816.76,net:33664.57},
+  Torill:{type:["Uføretrygd – Torill","KLP – Torill"],gross:null,tax:null,other:null,net:null},
+  Husholdningen:{type:"Ingen faste inntekter registrert",gross:null,tax:null,other:null,net:null}
+};
+
+
+const fundData=JSON.parse(storage.getItem("familieokonomi_fond")||'{"auag":{"units":4.19,"nav":43.37,"navDate":"2026-09-24"},"nordea":{"units":3.28,"nav":null,"navDate":null},"history":[]}');
+
+function saveFunds(){storage.setItem("familieokonomi_fond",JSON.stringify(fundData));}
+function fundLabel(k){return k==="auag"?"AuAg Silver Bullett EUR":"Nordea Emerging Market Equities A";}
+function editFund(k){
+ document.getElementById("fundSelect").value=k;
+ loadFundEditor();
+ document.getElementById("fundChange").focus();
+}
+function loadFundEditor(){
+ document.getElementById("fundChange").value="";
+}
+function saveFundChange(){
+ const k=document.getElementById("fundSelect").value;
+ if(k.startsWith("custom:")){ changeCustomFund(k.slice(7)); return; }
+ const change=Number(document.getElementById("fundChange").value);
+ const d=document.getElementById("fundDate").value;
+ const reason=document.getElementById("fundReason").value;
+ if(!d || !Number.isFinite(change) || change===0){alert("Fyll inn dato og en endring i antall andeler.");return;}
+ const newUnits=(Number(fundData[k].units)||0)+change;
+ if(newUnits<0){alert("Antall andeler kan ikke bli negativt.");return;}
+ fundData[k].units=Number(newUnits.toFixed(8));
+ fundData.history.unshift({id:Date.now(),fund:k,date:d,change,reason,units:fundData[k].units});
+ saveFunds();
+ document.getElementById("fundChange").value="";
+ document.getElementById("fundStatus").innerHTML='<div class="notice success">Fondsbeholdningen er oppdatert.</div>';
+ renderFunds();
+}
+function openAuAg(){window.open("https://www.auagfunds.com/no/investment-solutions/auag-silver-bullet","_blank");}
+function renderFunds(){
+ const a=fundData.auag,n=fundData.nordea;
+ document.getElementById("auagUnits").textContent=Number(a.units).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:8});
+ document.getElementById("auagNav").textContent=a.nav?Number(a.nav).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:2})+" EUR":"Ikke registrert";
+ document.getElementById("auagValue").textContent=a.nav?(a.units*a.nav).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:2})+" EUR":"Ikke beregnet";
+ document.getElementById("nordeaUnits").textContent=Number(n.units).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:8});
+ document.getElementById("nordeaNav").textContent=n.nav?Number(n.nav).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:4}):"Ikke registrert";
+ document.getElementById("nordeaValue").textContent=n.nav?(n.units*n.nav).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:2}):"Ikke beregnet";
+ const hist=fundData.history||[];
+ document.getElementById("fundHistory").innerHTML=hist.length?'<table><tr><th>Dato</th><th>Fond</th><th>Endring</th><th>Årsak</th><th>Beholdning</th></tr>'+hist.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(fundLabel(x.fund))}</td><td>${Number(x.change).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:8})}</td><td>${esc(x.reason)}</td><td>${Number(x.units).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:8})}</td></tr>`).join("")+'</table>':'<p class="muted">Ingen endringer registrert ennå.</p>';
+}
+
+
+const auagMonthlyReturns={
+ "2023-10":3.36,"2023-11":14.11,"2023-12":-2.49,
+ "2024-01":-11.31,"2024-02":-7.72,"2024-03":30.55,"2024-04":12.55,"2024-05":16.77,"2024-06":-11.37,"2024-07":10.48,"2024-08":-7.30,"2024-09":8.23,"2024-10":12.04,"2024-11":-8.85,"2024-12":-9.46,
+ "2025-01":13.95,"2025-02":-3.58,"2025-03":10.48,"2025-04":-2.42,"2025-05":7.97,"2025-06":8.95,"2025-07":2.00,"2025-08":19.68,"2025-09":25.90,"2025-10":-1.00,"2025-11":17.78,"2025-12":12.12,
+ "2026-01":13.98,"2026-02":23.47,"2026-03":-24.60,"2026-04":-0.41,"2026-05":4.11,"2026-06":-12.40,"2026-07":-6.97,"2026-08":32.03,"2026-09":-6.39
+};
+const nordeaQuarterlyReturns=[
+ ["2023 Q4",4.60],["2024 Q1",9.39],["2024 Q2",6.00],["2024 Q3",2.09],["2024 Q4",-2.82],
+ ["2025 Q1",-2.15],["2025 Q2",6.47],["2025 Q3",10.85],["2025 Q4",9.27],["2026 Q1",1.82],["2026 Q2",25.51]
+];
+function makeSeriesFromReturns(baseDate, returns){
+ let v=100, out=[{label:baseDate,value:v}];
+ returns.forEach(x=>{v*=1+x/100;out.push({label:x.label,value:v});});
+ return out;
+}
+function auagSeries(){
+ let v=100,out=[{label:'Sep 2023',value:v}];
+ Object.keys(auagMonthlyReturns).sort().forEach(k=>{v*=1+auagMonthlyReturns[k]/100;out.push({label:k,value:v});});
+ return out;
+}
+function nordeaSeries(){
+ // Nordea factsheet gives quarterly returns; the last Q2 2026 figure is derived from YTD 27.81% and Q1 1.82%.
+ return makeSeriesFromReturns('Sep 2023',nordeaQuarterlyReturns);
+}
+function renderPerformanceChart(id,series,caption){
+ const el=document.getElementById(id); if(!el)return;
+ if(!series||series.length<2){el.innerHTML='<div class="empty">Ingen historiske data tilgjengelig.</div>';return;}
+ const W=900,H=300,L=58,R=24,T=24,B=48;
+ const vals=series.map(p=>p.value), min=Math.min(...vals), max=Math.max(...vals), span=Math.max(1,max-min), lo=min-span*.08, hi=max+span*.08;
+ const x=i=>L+i*(W-L-R)/(series.length-1), y=v=>T+(hi-v)*(H-T-B)/(hi-lo);
+ const grid=[0,.25,.5,.75,1].map(f=>{let yy=T+(H-T-B)*f;return `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" class="pg"/>`;}).join('');
+ const line=series.map((p,i)=>`${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
+ const idxs=[0,Math.floor((series.length-1)*.25),Math.floor((series.length-1)*.5),Math.floor((series.length-1)*.75),series.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+ const labels=idxs.map(i=>`<text x="${x(i)}" y="${H-14}" text-anchor="middle" class="tx">${series[i].label}</text>`).join('');
+ const dots=idxs.map(i=>`<circle cx="${x(i)}" cy="${y(series[i].value)}" r="4" class="pp"><title>${series[i].label}: ${series[i].value.toFixed(1)}</title></circle>`).join('');
+ const start=series[0].value, last=series[series.length-1].value, change=(last/start-1)*100;
+ el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(caption)}">${grid}<polyline points="${line}" class="pl"/>${dots}<text x="${L-8}" y="${T+4}" text-anchor="end" class="tv">${hi.toFixed(0)}</text><text x="${L-8}" y="${H-B+4}" text-anchor="end" class="tv">${lo.toFixed(0)}</text>${labels}<text x="${W-R}" y="${y(last)-12}" text-anchor="end" class="tv">${change>=0?'+':''}${change.toFixed(1)} %</text></svg>`;
+}
+function renderPerformanceCharts(){
+ renderPerformanceChart('auagPerformanceChart',auagSeries(),'AuAg Silver Bullet B EUR – utvikling');
+ renderPerformanceChart('nordeaPerformanceChart',nordeaSeries(),'Nordea Emerging Market Equities A EUR – utvikling');
+}
+
+function save(){storage.setItem(DATA_KEY,JSON.stringify(data)); render();}
+let torillIncome=JSON.parse(storage.getItem("familieokonomi_torill_income")||'{"ufore":0,"klp":0}');
+function saveTorillIncome(){
+ torillIncome.ufore=Number(document.getElementById("torillUfore").value)||0;
+ torillIncome.klp=Number(document.getElementById("torillKlp").value)||0;
+ storage.setItem("familieokonomi_torill_income",JSON.stringify(torillIncome));
+ document.getElementById("torillIncomeStatus").textContent="Torills inntekter er lagret.";
+ render();
+}
+function loadTorillIncome(){
+ if(document.getElementById("torillUfore")){
+  document.getElementById("torillUfore").value=torillIncome.ufore||"";
+  document.getElementById("torillKlp").value=torillIncome.klp||"";
+ }
+}
+function kr(n){return new Intl.NumberFormat('nb-NO',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(n)||0)+" kr"}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function displayAccount(a){
+ if(a==="Fond – Odd – AuAg Silver Bullet EUR") return "Fond – Odd:<br><span class=\"fundname\">AuAg Silver Bullett EUR</span>";
+ if(a==="Fond – Odd – Nordea Emerging Market Equities A") return "Fond – Odd:<br><span class=\"fundname\">Nordea Emerging Market Equities A</span>";
+ if(a==="Fond – Torill") return "Fond – Torill:<br><span class=\"fundname\">Fond</span>";
+ return esc(a);
+}
+function fill(id,arr){const el=document.getElementById(id); if(!el)return; el.innerHTML='<option value="">Velg…</option>'+arr.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}
+function show(id){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));const page=document.getElementById(id);if(!page)return;page.classList.add("active");render();if(id==="fond" && typeof renderPerformanceCharts==="function")renderPerformanceCharts();}
+
+function saveBalance(){
+ const account=document.getElementById("balAccount").value, amount=Number(document.getElementById("balAmount").value), date=document.getElementById("balDate").value;
+ if(!account||!date||isNaN(amount)){alert("Fyll inn konto, saldo og dato.");return}
+ data.balances=data.balances.filter(x=>x.account!==account);
+ data.balances.push({id:Date.now(),account,amount,date});
+ document.getElementById("balAmount").value="";
+ save();
+}
+function toggleTransfer(){
+ const isTransfer=type.value==="overforing";
+ toAccountWrap.style.display=isTransfer?"block":"none";
+}
+function filterBudgetCategories(){
+ const g=budgetGroup.value;
+ const groups={
+  shared50:["Nordea Huslån","Gjensidige forsikring","Polar Kraft strøm","Signal Altibox","Statens lånekasse"],
+  joint:["Kommunale avgifter m.m.","IRIS Salten","Beiarn Turistsenter","Fyringsved privat","Fyringsgass campingvogn","Årsabonnement Office 365","Verksted ATV/traktorklipper","Drivstoff ATV/traktorklipper","Ferie"],
+  fjelli:["Nord Salten Kraft strøm","Gjensidige forsikring","Kommunale avgifter m.m."],
+  tax:["Tilbakebetaling skatt","Baksmell skatt"],
+  otherincome:["Gave","Gevinst","Arv"],
+  other:["Annen innbetaling","Annen utgift"]
+ };
+ const list=g==="alle"?CATS:(groups[g]||[]);
+ category.innerHTML='<option value="">Velg kategori</option>'+list.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");
+}
+function setTaxType(){
+ const c=category.value;
+ if(c==="Tilbakebetaling skatt") type.value="inntekt";
+ if(c==="Baksmell skatt") type.value="utgift";
+}
+function categoryGroupFor(c){
+ const groups={
+  shared50:["Nordea Huslån","Gjensidige forsikring","Polar Kraft strøm","Signal Altibox","Statens lånekasse"],
+  joint:["Kommunale avgifter m.m.","IRIS Salten","Beiarn Turistsenter","Fyringsved privat","Fyringsgass campingvogn","Årsabonnement Office 365","Verksted ATV/traktorklipper","Drivstoff ATV/traktorklipper","Ferie"],
+  fjelli:["Nord Salten Kraft strøm","Gjensidige forsikring","Kommunale avgifter m.m."],
+  tax:["Tilbakebetaling skatt","Baksmell skatt"],
+  otherincome:["Gave","Gevinst","Arv"],
+  other:["Annen innbetaling","Annen utgift"]
+ };
+ for(const [g,list] of Object.entries(groups)) if(list.includes(c)) return g;
+ return "alle";
+}
+function savePost(){
+ const dateEl=document.getElementById("date"), descEl=document.getElementById("desc"), amountEl=document.getElementById("amount");
+ const whoEl=document.getElementById("who"), areaEl=document.getElementById("area"), groupEl=document.getElementById("budgetGroup");
+ const categoryEl=document.getElementById("category"), accountEl=document.getElementById("account"), typeEl=document.getElementById("type");
+ const toAccountEl=document.getElementById("toAccount"), noteEl=document.getElementById("note");
+ const amount=Number(String(amountEl.value).replace(",","."));
+ const post={id:editId||Date.now(),date:dateEl.value,desc:descEl.value.trim(),amount,who:whoEl.value,area:areaEl.value,category:categoryEl.value,account:accountEl.value,toAccount:typeEl.value==="overforing"?toAccountEl.value:"",type:typeEl.value,note:noteEl.value.trim()};
+ if(!post.date){alert("Velg dato.");dateEl.focus();return}
+ if(!post.desc){alert("Skriv en beskrivelse.");descEl.focus();return}
+ if(!Number.isFinite(post.amount)||post.amount<=0){alert("Skriv inn et beløp større enn 0.");amountEl.focus();return}
+ if(!post.category){alert("Velg en kategori.");categoryEl.focus();return}
+ if(!post.account){alert("Velg hvilken konto posten gjelder.");accountEl.focus();return}
+ if(!post.who){alert("Velg hvem posten gjelder.");whoEl.focus();return}
+ if(!post.area){alert("Velg område.");areaEl.focus();return}
+ if(post.type==="overforing" && (!post.toAccount||post.account===post.toAccount)){alert("Ved overføring må du velge både fra-konto og til-konto, og de må være forskjellige.");return}
+ if(editId){data.posts=data.posts.map(x=>x.id===editId?post:x);editId=null;editNotice.innerHTML='<div class="notice success">Posten er endret.</div>'}
+ else {data.posts.push(post);editNotice.innerHTML='<div class="notice success">Posten er lagret.</div>'}
+ clearForm(false);save();
+}
+function clearForm(clearMsg=true){
+ ["desc","amount","note"].forEach(id=>document.getElementById(id).value="");
+ editId=null;if(clearMsg)document.getElementById("editNotice").innerHTML="";
+ document.getElementById("date").value="2026-10-01";
+ document.getElementById("who").selectedIndex=0;document.getElementById("area").selectedIndex=0;
+ document.getElementById("budgetGroup").value="alle";filterBudgetCategories();
+ document.getElementById("type").value="utgift";document.getElementById("account").selectedIndex=0;document.getElementById("toAccount").value="";toggleTransfer();
+}
+function editPost(id){
+ const p=data.posts.find(x=>x.id===id);if(!p)return;editId=id;
+ document.getElementById("date").value=p.date;document.getElementById("desc").value=p.desc;document.getElementById("amount").value=p.amount;
+ document.getElementById("who").value=p.who;document.getElementById("area").value=p.area;document.getElementById("budgetGroup").value=categoryGroupFor(p.category);filterBudgetCategories();document.getElementById("category").value=p.category;
+ document.getElementById("account").value=p.account;document.getElementById("type").value=p.type;document.getElementById("toAccount").value=p.toAccount||"";document.getElementById("note").value=p.note||"";toggleTransfer();
+ document.getElementById("editNotice").innerHTML='<div class="notice">Du redigerer en eksisterende post. Trykk <b>Lagre post</b> når du er ferdig.</div>';
+ show("registrer");
+}
+function delPost(id){if(confirm("Slette denne posten?")){data.posts=data.posts.filter(x=>x.id!==id);save()}}
+function delBalance(id){if(confirm("Slette denne startsaldoen?")){data.balances=data.balances.filter(x=>x.id!==id);save()}}
+function renderBalances(){
+ let h='<table><tr><th>Konto / fond</th><th>Dato</th><th class="right">Saldo</th><th></th></tr>';
+ if(!data.balances.length)h+='<tr><td colspan="4" class="muted">Ingen startsaldoer registrert ennå.</td></tr>';
+ data.balances.forEach(b=>h+=`<tr><td>${esc(b.account)}</td><td>${esc(b.date)}</td><td class="right">${kr(b.amount)}</td><td class="right"><button class="danger" onclick="delBalance(${b.id})">Slett</button></td></tr>`);
+ h+='</table>';balancesTable.innerHTML=h;
+}
+function renderPosts(){
+ let h='<table><tr><th>Dato</th><th>Beskrivelse</th><th>Hvem</th><th>Område</th><th>Konto</th><th>Til konto</th><th class="right">Beløp</th><th></th></tr>';
+ if(!data.posts.length)h+='<tr><td colspan="8" class="muted">Ingen poster registrert.</td></tr>';
+ [...data.posts].sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>h+=`<tr><td>${esc(p.date)}</td><td>${esc(p.desc)}</td><td>${esc(p.who)}</td><td>${esc(p.area)}</td><td>${esc(p.account)}</td><td>${esc(p.toAccount||"—")}</td><td class="right">${kr(p.amount)}</td><td class="right"><button onclick="editPost(${p.id})">✏️</button> <button class="danger" onclick="delPost(${p.id})">🗑️</button></td></tr>`);
+ h+='</table>';postsTable.innerHTML=h;
+}
+function render(){
+ const sums={};ACCOUNTS.forEach(a=>sums[a]=0);
+ data.balances.forEach(b=>{
+   if(Object.prototype.hasOwnProperty.call(sums,b.account)) sums[b.account]+=Number(b.amount)||0;
+ });
+ data.posts.forEach(p=>{
+   const amount=Number(p.amount)||0;
+   if(!Object.prototype.hasOwnProperty.call(sums,p.account)) sums[p.account]=0;
+   if(p.type==="utgift") sums[p.account]-=amount;
+   if(p.type==="inntekt") sums[p.account]+=amount;
+   if(p.type==="overforing"){
+      sums[p.account]-=amount;
+      if(p.toAccount){
+         if(!Object.prototype.hasOwnProperty.call(sums,p.toAccount)) sums[p.toAccount]=0;
+         sums[p.toAccount]+=amount;
+      }
+   }
+ });
+
+ cards.innerHTML=Object.keys(sums).map(a=>`<div class="card overview-card"><h3>${displayAccount(a)}</h3><div class="big">${kr(sums[a])}</div><div class="muted small">saldo etter registrerte poster</div></div>`).join("");
+
+ renderFunds();
+ renderBalances();
+ renderPosts();
+
+ const latest=[...data.posts].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
+ let oh='<table><tr><th>Dato</th><th>Beskrivelse</th><th>Område</th><th>Konto</th><th>Til konto</th><th class="right">Beløp</th></tr>';
+ if(!latest.length) oh+='<tr><td colspan="6" class="muted">Ingen poster registrert ennå.</td></tr>';
+ latest.forEach(p=>{
+   const sign=p.type==="utgift"?"−":p.type==="inntekt"?"+":"↔";
+   oh+=`<tr><td>${esc(p.date)}</td><td>${esc(p.desc)}</td><td>${esc(p.area)}</td><td>${esc(p.account)}</td><td>${esc(p.toAccount||"—")}</td><td class="right">${sign} ${kr(p.amount)}</td></tr>`;
+ });
+ oh+='</table>';
+ overviewPosts.innerHTML=oh;
+
+ const ar={};AREAS.forEach(a=>ar[a]=0);
+ data.posts.forEach(p=>{
+   if(p.type==="utgift") ar[p.area]=(ar[p.area]||0)+Number(p.amount)||0;
+ });
+ let ah='<table><tr><th>Område</th><th class="right">Registrerte utgifter</th></tr>';
+ AREAS.forEach(a=>ah+=`<tr><td>${esc(a)}</td><td class="right">${kr(ar[a])}</td></tr>`);
+ ah+='</table>';
+ overviewAreas.innerHTML=ah;
+
+ const total=data.posts.reduce((s,p)=>s+(p.type==="utgift"?Number(p.amount)||0:0),0);
+ const monthlyNetIncome=(incomeData.Odd.net||0);
+ reportCards.innerHTML=`<div class="card"><h3>Registrerte utgifter</h3><div class="big">${kr(total)}</div></div>
+ <div class="card"><h3>Antall poster</h3><div class="big">${data.posts.length}</div></div>
+ <div class="card"><h3>Startsaldоer</h3><div class="big">${kr(data.balances.reduce((s,b)=>s+(Number(b.amount)||0),0))}</div></div>
+ <div class="card"><h3>Odd – netto inntekt</h3><div class="big">${kr(monthlyNetIncome)}</div><div class="muted small">fast månedlig</div></div>`;
+
+ areaReport.innerHTML='<table><tr><th>Område</th><th class="right">Utgifter</th></tr>'+
+   AREAS.map(a=>`<tr><td>${esc(a)}</td><td class="right">${kr(ar[a])}</td></tr>`).join("")+
+   '</table>';
+ renderPerformanceChart('overviewAuagPerformanceChart',auagSeries(),'AuAg Silver Bullet B EUR – utvikling');
+ renderPerformanceChart('overviewNordeaPerformanceChart',nordeaSeries(),'Nordea Emerging Market Equities A EUR – utvikling');
+}
+loadTorillIncome();
+function exportData(){
+ const exportObject={data:data,funds:fundData,customFunds:getCustomFunds(),torillIncome:torillIncome}; const blob=new Blob([JSON.stringify(exportObject,null,2)],{type:"application/json"}), a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);a.download="Familieokonomi_fellesdata.json";a.click();URL.revokeObjectURL(a.href);
+}
+function importData(e){
+ const f=e.target.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const x=JSON.parse(r.result);const imported=x.data||x;if(!imported.balances||!imported.posts)throw Error();data=imported;if(x.funds){Object.keys(fundData).forEach(k=>delete fundData[k]);Object.assign(fundData,x.funds);saveFunds()}if(Array.isArray(x.customFunds))saveCustomFunds(x.customFunds);if(x.torillIncome){torillIncome=x.torillIncome;storage.setItem("familieokonomi_torill_income",JSON.stringify(torillIncome));}save();renderAllCustomFundUI();alert("Felles data er importert.")}catch(err){alert("Filen kunne ikke leses som Familieøkonomi-data.")}};
+ r.readAsText(f);
+}
+function resetData(){if(confirm("Dette sletter alle lokale data i denne nettleseren. Fortsette?")){data={balances:[],posts:[]};storage.removeItem("familieokonomi_fond");storage.removeItem("familieokonomi_custom_funds");storage.removeItem("familieokonomi_torill_income");storage.removeItem("familieokonomi_2_7");storage.removeItem("familieokonomi_2_2");save();location.reload()}}
+// Initialisering skjer nederst etter at alle funksjoner er lastet.
+</script>
+
+<script>
+function getCustomFunds(){
+  try{return JSON.parse(storage.getItem('familieokonomi_custom_funds')||'[]');}catch(e){return []}
+}
+function saveCustomFunds(funds){storage.setItem('familieokonomi_custom_funds',JSON.stringify(funds));}
+function addNewFund(){
+  const owner=document.getElementById('newFundOwner').value;
+  const name=document.getElementById('newFundName').value.trim();
+  const units=parseFloat((document.getElementById('newFundUnits').value||'').replace(',','.'));
+  if(!name){alert('Skriv inn fondets navn.');return;}
+  if(!Number.isFinite(units)||units<0){alert('Skriv inn antall fondsandeler.');return;}
+  const funds=getCustomFunds();
+  const existing=funds.find(f=>f.owner===owner && f.name.toLowerCase()===name.toLowerCase());
+  if(existing){existing.units=Number(existing.units||0)+units; existing.updated=new Date().toISOString();}
+  else funds.push({id:Date.now(),owner,name,units,created:new Date().toISOString(),history:[{date:new Date().toISOString().slice(0,10),units,change:units,reason:'Startbeholdning'}]});
+  saveCustomFunds(funds);
+  document.getElementById('newFundName').value='';
+  document.getElementById('newFundUnits').value='';
+  renderCustomFunds();
+  populateFundSelect();
+  alert(existing?'Fondsbeholdningen er økt.':'Nytt fond er lagt til.');
+}
+function populateFundSelect(){
+  const sel=document.getElementById('fundSelect'); if(!sel)return;
+  const custom=getCustomFunds();
+  const current=sel.value;
+  const base='<option value="auag">AuAg Silver Bullett EUR</option><option value="nordea">Nordea Emerging Market Equities A</option>';
+  const extra=custom.map(f=>`<option value="custom:${f.id}">Fond – ${esc(f.owner)}: ${esc(f.name)}</option>`).join('');
+  sel.innerHTML=base+extra;
+  if([...sel.options].some(o=>o.value===current))sel.value=current;
+}
+function changeCustomFund(id){
+  const funds=getCustomFunds(); const f=funds.find(x=>String(x.id)===String(id)); if(!f)return;
+  const change=Number(document.getElementById('fundChange').value);
+  const date=document.getElementById('fundDate').value;
+  const reason=document.getElementById('fundReason').value;
+  if(!date||!Number.isFinite(change)||change===0){alert('Fyll inn dato og en endring i antall andeler.');return;}
+  const nu=Number(f.units||0)+change;
+  if(nu<0){alert('Antall andeler kan ikke bli negativt.');return;}
+  f.units=Number(nu.toFixed(8)); f.updated=new Date().toISOString();
+  f.history=f.history||[]; f.history.unshift({date,units:f.units,change,reason});
+  saveCustomFunds(funds); document.getElementById('fundChange').value='';
+  document.getElementById('fundStatus').innerHTML='<div class="notice success">Fondsbeholdningen er oppdatert.</div>';
+  renderCustomFunds();
+}
+function renderCustomFunds(){
+  const el=document.getElementById('customFundsList'); if(!el)return;
+  const funds=getCustomFunds();
+  if(!funds.length){el.innerHTML='<p class="muted">Ingen nye fond registrert ennå.</p>';return;}
+  el.innerHTML=funds.map(f=>{
+    const units=Number(f.units||0).toLocaleString('nb-NO',{minimumFractionDigits:2,maximumFractionDigits:8});
+    const sold=f.units===0;
+    return `<div class="fund-chart-block" style="margin-top:14px"><h4>Fond – ${esc(f.owner)}: ${esc(f.name)}</h4><div class="notice">${sold?'Fondet er solgt ut. Historikken beholdes.':'Antall andeler: '+units}</div><div class="performance-chart custom-fund-placeholder"><div class="empty">Fondsgraf klar. Historiske kursdata må kobles til fondet før verdiutviklingen kan vises.</div></div></div>`;
+  }).join('');
+}
+function renderAllCustomFundUI(){renderCustomFunds();populateFundSelect();}
+document.addEventListener('DOMContentLoaded',renderAllCustomFundUI);
+</script>
+
+
+
+
+<section id="rente" class="page">
+  <h2>Rentekalkulator – huslån</h2>
+  <div class="card">
+    <h3>Legg inn opplysningene om lånet</h3>
+    <div class="grid">
+      <div class="field"><label>Restgjeld (kr)</label><input id="loanPrincipal" type="number" step="0.01" min="0" placeholder="F.eks. 2500000"></div>
+      <div class="field"><label>Nominell rente (%)</label><input id="loanRate" type="number" step="0.01" min="0" placeholder="F.eks. 5,50"></div>
+      <div class="field"><label>Sluttdato</label><input id="loanEndDate" type="date"></div>
+      <div class="field"><label>Termingebyr (kr)</label><input id="loanFee" type="number" step="0.01" min="0" value="0"></div>
+      <div class="field"><label>Ekstra innbetaling per måned (kr)</label><input id="loanExtra" type="number" step="0.01" min="0" value="0"></div>
+      <div class="field"><label>Lånetype</label>
+        <select id="loanType">
+          <option value="annuity">Annuitetslån</option>
+          <option value="serial">Serielån</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button type="button" onclick="calculateLoan()">Beregn lån</button>
+      <button type="button" onclick="clearLoan()">Nullstill</button>
+    </div>
+  </div>
+
+  <div id="loanResults" class="card" style="display:none">
+    <h3>Resultat</h3>
+    <div class="grid">
+      <div class="stat"><small>Månedlig terminbeløp</small><strong id="loanMonthly">–</strong></div>
+      <div class="stat"><small>Totale renter</small><strong id="loanInterest">–</strong></div>
+      <div class="stat"><small>Totalt tilbakebetalt</small><strong id="loanTotal">–</strong></div>
+      <div class="stat"><small>Antall terminer</small><strong id="loanTerms">–</strong></div>
+      <div class="stat"><small>Første måneds rente</small><strong id="loanFirstInterest">–</strong></div>
+      <div class="stat"><small>Første måneds avdrag</small><strong id="loanFirstPrincipal">–</strong></div>
+      <div class="stat"><small>Forventet sluttdato</small><strong id="loanPayoffDate">–</strong></div>
+    </div>
+  </div>
+
+  <div id="loanScheduleCard" class="card" style="display:none">
+    <h3>Nedbetalingsplan</h3>
+    <div style="overflow:auto">
+      <table id="loanSchedule">
+        <thead><tr><th>Dato</th><th>Termin</th><th>Renter</th><th>Avdrag</th><th>Gebyr</th><th>Restgjeld</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Hva viser kalkulatoren?</h3>
+    <p>Rentekalkulatoren beregner renter, avdrag og restgjeld måned for måned. For annuitetslån er terminbeløpet i utgangspunktet likt når renten er uendret. Ved renteendringer må beregningen kjøres på nytt.</p>
+    <p>Dette er en beregning og kan avvike fra bankens faktiske nedbetalingsplan på grunn av betalingsdatoer, avrunding, gebyrer og renteendringer.</p>
+  </div>
+</section>
+
+
+<script>
+function money(n){
+  return Number(n||0).toLocaleString("nb-NO",{minimumFractionDigits:2,maximumFractionDigits:2})+" kr";
+}
+function addMonths(date, months){
+  const d=new Date(date);
+  d.setMonth(d.getMonth()+months);
+  return d;
+}
+function calculateLoan(){
+  const P=parseFloat((document.getElementById("loanPrincipal").value||"").replace(",",".")); 
+  const annual=parseFloat((document.getElementById("loanRate").value||"").replace(",","."));
+  const endVal=document.getElementById("loanEndDate").value;
+  const fee=parseFloat(document.getElementById("loanFee").value||0);
+  const extra=parseFloat(document.getElementById("loanExtra").value||0);
+  const type=document.getElementById("loanType").value;
+  if(!P || P<=0 || isNaN(annual) || annual<0 || !endVal){
+    alert("Fyll inn restgjeld, rente og sluttdato.");
+    return;
+  }
+  const start=new Date();
+  const end=new Date(endVal+"T00:00:00");
+  let months=(end.getFullYear()-start.getFullYear())*12+(end.getMonth()-start.getMonth());
+  if(end.getDate()>=start.getDate()) months+=1;
+  months=Math.max(1,months);
+  const r=annual/100/12;
+  let balance=P, rows=[], totalInterest=0, totalPaid=0, firstInterest=0, firstPrincipal=0;
+  let n=months;
+  let annuity = r===0 ? P/n : P*r/(1-Math.pow(1+r,-n));
+  let i=0;
+  while(balance>0.005 && i<1200){
+    i++;
+    const date=addMonths(start,i-1);
+    const interest=balance*r;
+    let principal;
+    let payment;
+    if(type==="annuity"){
+      payment=Math.min(balance+interest,annuity+extra);
+      principal=payment-interest;
+    }else{
+      principal=Math.min(balance,P/n+extra);
+      payment=principal+interest;
+    }
+    if(principal<0) principal=0;
+    balance=Math.max(0,balance-principal);
+    totalInterest+=interest;
+    totalPaid+=payment+fee;
+    if(i===1){firstInterest=interest;firstPrincipal=principal;}
+    rows.push({date,payment,interest,principal,fee,balance});
+    if(balance<=0.005) break;
+  }
+  document.getElementById("loanResults").style.display="block";
+  document.getElementById("loanScheduleCard").style.display="block";
+  document.getElementById("loanMonthly").textContent=money(rows[0]?.payment+fee);
+  document.getElementById("loanInterest").textContent=money(totalInterest);
+  document.getElementById("loanTotal").textContent=money(totalPaid);
+  document.getElementById("loanTerms").textContent=String(rows.length);
+  document.getElementById("loanFirstInterest").textContent=money(firstInterest);
+  document.getElementById("loanFirstPrincipal").textContent=money(firstPrincipal);
+  document.getElementById("loanPayoffDate").textContent=rows.length ? rows[rows.length-1].date.toLocaleDateString("nb-NO") : "–";
+  const tbody=document.querySelector("#loanSchedule tbody");
+  tbody.innerHTML=rows.map((x,idx)=>`<tr><td>${x.date.toLocaleDateString("nb-NO")}</td><td>${money(x.payment+fee)}</td><td>${money(x.interest)}</td><td>${money(x.principal)}</td><td>${money(x.fee)}</td><td>${money(x.balance)}</td></tr>`).join("");
+}
+function clearLoan(){
+  ["loanPrincipal","loanRate","loanEndDate"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("loanFee").value="0";
+  document.getElementById("loanExtra").value="0";
+  document.getElementById("loanResults").style.display="none";
+  document.getElementById("loanScheduleCard").style.display="none";
+}
+</script>
+
+
+<script>
+// Familieøkonomi 3.0 – samlet initialisering etter at alle funksjoner er lastet.
+document.addEventListener("DOMContentLoaded", function(){
+  try {
+    populateFundSelect();
+    fill("balAccount", ACCOUNTS);
+    fill("who", WHO);
+    fill("area", AREAS);
+    fill("account", ACCOUNTS);
+    fill("toAccount", ACCOUNTS);
+    filterBudgetCategories();
+    toggleTransfer();
+    render();
+    if (typeof renderAllCustomFundUI === "function") renderAllCustomFundUI();
+    if (typeof renderPerformanceCharts === "function") renderPerformanceCharts();
+  } catch (e) {
+    console.error("Initialisering av Familieøkonomi feilet:", e);
+  }
+});
+</script>
+
+
+<script>
+/* =========================
+   Familieøkonomi 3.0
+   Ekte OneDrive / Microsoft Graph
+   OAuth 2.0 Authorization Code + PKCE
+   ========================= */
+
+const OD_SCOPES = "openid profile offline_access Files.ReadWrite";
+const OD_AUTHORITY = "https://login.microsoftonline.com/common/oauth2/v2.0";
+const OD_GRAPH = "https://graph.microsoft.com/v1.0";
+
+const safeSession = (() => {
+  try {
+    const s = window.sessionStorage;
+    const k = "__familieokonomi_session_test__";
+    s.setItem(k, "1"); s.removeItem(k);
+    return s;
+  } catch(e) {
+    const m = Object.create(null);
+    return {
+      getItem:k=>Object.prototype.hasOwnProperty.call(m,k)?m[k]:null,
+      setItem:(k,v)=>m[k]=String(v),
+      removeItem:k=>delete m[k]
+    };
+  }
+})();
+
+function odSetStatus(text, kind=""){
+  const el=document.getElementById("onedriveStatus");
+  if(el){
+    el.textContent="Status: "+text;
+    el.className="card "+(kind==="success"?"notice success":kind==="warning"?"notice warning":"");
+  }
+}
+
+function odSettings(){
+  return {
+    clientId: document.getElementById("odClientId")?.value.trim() || "",
+    redirectUri: document.getElementById("odRedirectUri")?.value.trim() || "",
+    shareUrl: document.getElementById("odShareUrl")?.value.trim() || ""
+  };
+}
+
+function loadOneDriveSettings(){
+  const saved = (()=>{ try{return JSON.parse(storage.getItem("familieokonomi_onedrive_settings")||"{}")}catch(e){return {}} })();
+  const redirect = window.location.protocol==="http:" || window.location.protocol==="https:"
+    ? window.location.origin + window.location.pathname
+    : "";
+  if(document.getElementById("odClientId")) document.getElementById("odClientId").value=saved.clientId||"";
+  if(document.getElementById("odRedirectUri")) document.getElementById("odRedirectUri").value=saved.redirectUri||redirect;
+  if(document.getElementById("odShareUrl")) document.getElementById("odShareUrl").value=saved.shareUrl||"";
+}
+
+function saveOneDriveSettings(){
+  const s=odSettings();
+  if(!s.clientId){alert("Skriv inn Microsoft App / Client ID.");return;}
+  if(!s.redirectUri || !/^https?:\/\//i.test(s.redirectUri)){
+    alert("Programmet må kjøres fra en HTTP/HTTPS-adresse. En vanlig file://-åpning kan ikke brukes til ekte Microsoft-pålogging.");
+    return;
+  }
+  if(!s.shareUrl || !/^https?:\/\//i.test(s.shareUrl)){
+    alert("Lim inn delingslenken til Familieokonomi_fellesdata.json fra OneDrive.");
+    return;
+  }
+  storage.setItem("familieokonomi_onedrive_settings",JSON.stringify(s));
+  odSetStatus("OneDrive-oppsettet er lagret.","success");
+}
+
+function clearOneDriveSettings(){
+  if(!confirm("Fjerne OneDrive-oppsettet fra denne nettleseren?")) return;
+  storage.removeItem("familieokonomi_onedrive_settings");
+  safeSession.removeItem("od_access_token");
+  safeSession.removeItem("od_refresh_token");
+  safeSession.removeItem("od_expires_at");
+  safeSession.removeItem("od_pkce_verifier");
+  safeSession.removeItem("od_state");
+  loadOneDriveSettings();
+  updateOneDriveAccountStatus();
+  odSetStatus("OneDrive-oppsettet er nullstilt.");
+}
+
+function randomString(bytes=32){
+  const a=new Uint8Array(bytes);
+  crypto.getRandomValues(a);
+  return Array.from(a,b=>b.toString(16).padStart(2,"0")).join("");
+}
+function base64Url(bytes){
+  let s="";
+  const a=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  for(const b of a)s+=String.fromCharCode(b);
+  return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+async function sha256(text){
+  return crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));
+}
+async function pkceChallenge(verifier){
+  return base64Url(await sha256(verifier));
+}
+
+async function oneDriveLogin(){
+  const s=odSettings();
+  if(!s.clientId || !s.redirectUri || !s.shareUrl){
+    alert("Fyll inn Client ID og OneDrive-dellingslenke først, og trykk Lagre oppsett.");
+    return;
+  }
+  if(!/^https?:\/\//i.test(s.redirectUri)){
+    alert("Ekte OneDrive-pålogging krever at programmet kjører fra en http/https-adresse som er registrert som SPA.");
+    return;
+  }
+  const verifier=randomString(48);
+  const state=randomString(24);
+  const challenge=await pkceChallenge(verifier);
+  safeSession.setItem("od_pkce_verifier",verifier);
+  safeSession.setItem("od_state",state);
+
+  const p=new URLSearchParams({
+    client_id:s.clientId,
+    response_type:"code",
+    redirect_uri:s.redirectUri,
+    response_mode:"query",
+    scope:OD_SCOPES,
+    state,
+    code_challenge:challenge,
+    code_challenge_method:"S256"
+  });
+  window.location.href=OD_AUTHORITY+"/authorize?"+p.toString();
+}
+
+async function handleOneDriveCallback(){
+  const q=new URLSearchParams(window.location.search);
+  const code=q.get("code"), state=q.get("state"), error=q.get("error");
+  if(!code && !error) return false;
+  if(error){
+    const desc=q.get("error_description")||error;
+    history.replaceState({},document.title,window.location.pathname);
+    alert("Microsoft-pålogging ble avbrutt: "+desc);
+    return true;
+  }
+  const expected=safeSession.getItem("od_state");
+  const verifier=safeSession.getItem("od_pkce_verifier");
+  if(!state || state!==expected || !verifier){
+    alert("Sikkerhetskontrollen for Microsoft-pålogging feilet. Start påloggingen på nytt.");
+    history.replaceState({},document.title,window.location.pathname);
+    return true;
+  }
+  const s=odSettings();
+  try{
+    const body=new URLSearchParams({
+      client_id:s.clientId,
+      grant_type:"authorization_code",
+      code,
+      redirect_uri:s.redirectUri,
+      code_verifier:verifier
+    });
+    const r=await fetch(OD_AUTHORITY+"/token",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body
+    });
+    const token=await r.json();
+    if(!r.ok) throw new Error(token.error_description||token.error||"Token-feil");
+    safeSession.setItem("od_access_token",token.access_token||"");
+    if(token.refresh_token) safeSession.setItem("od_refresh_token",token.refresh_token);
+    safeSession.setItem("od_expires_at",String(Date.now()+Math.max(60,(Number(token.expires_in)||3600)-60)*1000));
+    safeSession.removeItem("od_state");
+    safeSession.removeItem("od_pkce_verifier");
+    history.replaceState({},document.title,window.location.pathname);
+    await updateOneDriveAccountStatus();
+    odSetStatus("Microsoft-pålogging er fullført.","success");
+    return true;
+  }catch(e){
+    history.replaceState({},document.title,window.location.pathname);
+    alert("Kunne ikke fullføre Microsoft-påloggingen: "+e.message);
+    return true;
+  }
+}
+
+async function refreshOneDriveToken(){
+  const rt=safeSession.getItem("od_refresh_token");
+  const s=odSettings();
+  if(!rt || !s.clientId) return null;
+  const body=new URLSearchParams({
+    client_id:s.clientId,
+    grant_type:"refresh_token",
+    refresh_token:rt,
+    scope:OD_SCOPES
+  });
+  const r=await fetch(OD_AUTHORITY+"/token",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body
+  });
+  const token=await r.json();
+  if(!r.ok) throw new Error(token.error_description||token.error||"Kunne ikke fornye Microsoft-token.");
+  safeSession.setItem("od_access_token",token.access_token||"");
+  if(token.refresh_token) safeSession.setItem("od_refresh_token",token.refresh_token);
+  safeSession.setItem("od_expires_at",String(Date.now()+Math.max(60,(Number(token.expires_in)||3600)-60)*1000));
+  return token.access_token;
+}
+
+async function oneDriveToken(){
+  const token=safeSession.getItem("od_access_token");
+  const exp=Number(safeSession.getItem("od_expires_at")||0);
+  if(token && Date.now()<exp) return token;
+  return await refreshOneDriveToken();
+}
+
+function encodeShareUrl(url){
+  const bytes=new TextEncoder().encode(url);
+  return "u!"+base64Url(bytes);
+}
+
+async function graph(path,options={}){
+  let token=await oneDriveToken();
+  if(!token) throw new Error("Du er ikke logget inn med Microsoft.");
+  const headers=new Headers(options.headers||{});
+  headers.set("Authorization","Bearer "+token);
+  const r=await fetch(OD_GRAPH+path,{...options,headers});
+  if(r.status===401){
+    token=await refreshOneDriveToken();
+    if(!token) throw new Error("Microsoft-påloggingen er utløpt. Logg inn på nytt.");
+    headers.set("Authorization","Bearer "+token);
+    return fetch(OD_GRAPH+path,{...options,headers});
+  }
+  return r;
+}
+
+async function getSharedDriveItem(){
+  const s=odSettings();
+  if(!s.shareUrl) throw new Error("Mangler OneDrive-dellingslenke.");
+  const encoded=encodeShareUrl(s.shareUrl);
+  const r=await graph("/shares/"+encodeURIComponent(encoded)+"/driveItem?$select=id,name,size,eTag,webUrl,parentReference,remoteItem,file,@microsoft.graph.downloadUrl");
+  const x=await r.json();
+  if(!r.ok) throw new Error(x.error?.message||"Fikk ikke tilgang til den delte OneDrive-filen.");
+  return x;
+}
+
+function sharedRemoteInfo(item){
+  const r=item.remoteItem||item;
+  const id=r.id||item.id;
+  const driveId=r.parentReference?.driveId||item.parentReference?.driveId;
+  return {id,driveId,eTag:item.eTag||r.eTag,name:item.name||r.name,downloadUrl:item["@microsoft.graph.downloadUrl"]};
+}
+
+async function downloadSharedJson(){
+  const item=await getSharedDriveItem();
+  const info=sharedRemoteInfo(item);
+  if(!info.downloadUrl) throw new Error("OneDrive ga ingen nedlastingslenke for filen.");
+  const r=await fetch(info.downloadUrl);
+  if(!r.ok) throw new Error("Kunne ikke laste ned fellesdatafilen.");
+  const text=await r.text();
+  let parsed;
+  try{parsed=JSON.parse(text)}catch(e){throw new Error("Fellesdatafilen på OneDrive er ikke gyldig JSON.");}
+  return {parsed,item,info};
+}
+
+function applyImportedData(x){
+  const imported=x.data||x;
+  if(!imported || !Array.isArray(imported.balances) || !Array.isArray(imported.posts)){
+    throw new Error("Filen inneholder ikke gyldige Familieøkonomi-data.");
+  }
+  data=imported;
+  if(x.funds){
+    Object.keys(fundData).forEach(k=>delete fundData[k]);
+    Object.assign(fundData,x.funds);
+    saveFunds();
+  }
+  if(Array.isArray(x.customFunds)) saveCustomFunds(x.customFunds);
+  if(x.torillIncome){
+    torillIncome=x.torillIncome;
+    storage.setItem("familieokonomi_torill_income",JSON.stringify(torillIncome));
+  }
+  save();
+  renderAllCustomFundUI();
+  renderFunds();
+  render();
+}
+
+function currentSharedObject(){
+  return {
+    version:"3.0",
+    exportedAt:new Date().toISOString(),
+    data:JSON.parse(JSON.stringify(data)),
+    funds:JSON.parse(JSON.stringify(fundData)),
+    customFunds:typeof getCustomFunds==="function"?getCustomFunds():[],
+    torillIncome:JSON.parse(JSON.stringify(torillIncome||{})),
+    sync:{
+      appVersion:"3.0",
+      savedBy:"Familieøkonomi",
+      savedAt:new Date().toISOString()
+    }
+  };
+}
+
+async function syncFromOneDrive(){
+  try{
+    odSetStatus("Henter siste data fra OneDrive …");
+    const result=await downloadSharedJson();
+    applyImportedData(result.parsed);
+    storage.setItem("familieokonomi_onedrive_etag",result.info.eTag||"");
+    odSetStatus("Siste fellesdata er hentet fra OneDrive. Fil: "+result.info.name,"success");
+  }catch(e){
+    odSetStatus(e.message,"warning");
+    alert("OneDrive: "+e.message);
+  }
+}
+
+async function syncToOneDrive(){
+  try{
+    odSetStatus("Kontrollerer siste versjon på OneDrive …");
+    const latest=await getSharedDriveItem();
+    const info=sharedRemoteInfo(latest);
+    const known=safeSession.getItem("od_last_synced_etag") || storage.getItem("familieokonomi_onedrive_etag") || "";
+    if(known && info.eTag && known!==info.eTag){
+      odSetStatus("Stoppet: fellesfilen er endret siden du hentet den.","warning");
+      alert("Fellesfilen på OneDrive er endret siden du hentet den. Trykk «Hent siste data fra OneDrive» først. Ingen data ble overskrevet.");
+      return;
+    }
+    if(!info.driveId || !info.id) throw new Error("Fant ikke OneDrive-ID på den delte filen.");
+    const payload=JSON.stringify(currentSharedObject(),null,2);
+    const headers={"Content-Type":"application/json"};
+    if(info.eTag) headers["If-Match"]=info.eTag;
+    const r=await graph("/drives/"+encodeURIComponent(info.driveId)+"/items/"+encodeURIComponent(info.id)+"/content",{
+      method:"PUT",headers,body:payload
+    });
+    if(!r.ok){
+      if(r.status===412){
+        throw new Error("OneDrive-filen ble endret av en annen bruker. Hent siste data før du lagrer.");
+      }
+      const e=await r.json().catch(()=>({}));
+      throw new Error(e.error?.message||"Kunne ikke lagre fellesdata til OneDrive.");
+    }
+    const updated=await r.json().catch(()=>null);
+    const newTag=updated?.eTag||"";
+    safeSession.setItem("od_last_synced_etag",newTag);
+    storage.setItem("familieokonomi_onedrive_etag",newTag);
+    odSetStatus("Fellesdata er lagret direkte i OneDrive.","success");
+  }catch(e){
+    odSetStatus(e.message,"warning");
+    alert("OneDrive: "+e.message);
+  }
+}
+
+function importFamilyEconomyFile(){
+  const input=document.createElement("input");
+  input.type="file"; input.accept=".json,application/json";
+  input.onchange=async()=>{
+    const file=input.files?.[0]; if(!file)return;
+    try{
+      const x=JSON.parse(await file.text());
+      applyImportedData(x);
+      odSetStatus("Data fra 2.9 er importert til denne versjonen. Du kan nå lagre dem direkte til OneDrive.","success");
+    }catch(e){
+      alert("Kunne ikke importere datafilen: "+e.message);
+      odSetStatus("Import feilet.","warning");
+    }
+  };
+  input.click();
+}
+
+function exportLocalBackup(){
+  const blob=new Blob([JSON.stringify(currentSharedObject(),null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="Familieokonomi_backup_"+new Date().toISOString().replace(/[:.]/g,"-")+".json";
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  odSetStatus("Lokal backup er laget.","success");
+}
+
+async function updateOneDriveAccountStatus(){
+  const el=document.getElementById("odAccountStatus"); if(!el)return;
+  try{
+    const token=await oneDriveToken();
+    if(!token){el.textContent="Ikke logget inn.";return;}
+    const r=await graph("/me?$select=displayName,userPrincipalName,mail");
+    const x=await r.json();
+    if(!r.ok) throw new Error(x.error?.message||"Kunne ikke hente Microsoft-konto.");
+    el.innerHTML="<b>Innlogget:</b> "+esc(x.displayName||x.mail||x.userPrincipalName||"Microsoft-konto");
+  }catch(e){
+    el.textContent="Ikke logget inn.";
+  }
+}
+
+function oneDriveLogout(){
+  safeSession.removeItem("od_access_token");
+  safeSession.removeItem("od_refresh_token");
+  safeSession.removeItem("od_expires_at");
+  safeSession.removeItem("od_last_synced_etag");
+  updateOneDriveAccountStatus();
+  odSetStatus("Logget ut av Familieøkonomi 3.0.","success");
+}
+
+async function oneDriveInitialise(){
+  loadOneDriveSettings();
+  await handleOneDriveCallback();
+  await updateOneDriveAccountStatus();
+}
+oneDriveInitialise();
+</script>
+
+
+</body>
+</html>
